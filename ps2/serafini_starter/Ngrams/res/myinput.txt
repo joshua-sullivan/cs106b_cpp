@@ -1,0 +1,574 @@
+Future space missions involving the interaction of multiple
+satellites present increasingly demanding relative navigation
+requirements that must be achieved autonomously using limited
+onboard resources. The research presented in this paper considers a
+particularly useful relative navigation scenario wherein an observing
+spacecraft is navigating with respect to a target space object at large
+separations (several kilometers) using only bearing angles obtained
+by a single onboard camera. This so-called angles-only navigation
+provides an inherently passive, robust, and high-dynamic range
+capability that uses simple sensors that are already on board most
+spacecraft. Furthermore, because of their low-cost, low power
+consumption, and small form factor as compared with other
+metrology systems like lidar and radar, these sensors enable accurate
+relative navigation while complementing the current trend of
+spacecraft miniaturization. Accordingly, angles-only navigation
+represents a clear enabling technology for a variety of advanced
+multi-satellite mission concepts. These include robust
+autonomous rendezvous and docking, improved space
+situational awareness, advanced distributed aperture science (see,
+for example, the miniaturized distributed occulter/telescope project
+in development at Stanford University), and on-orbit servicing of
+noncooperative spacecraft. In line with the terminology of the
+last application, this paper denotes the observing spacecraft as “the
+servicer” and treats its orbit as the reference about which to describe
+the relative orbital motion of the target.
+
+The angles-only navigation problem has been explored in several
+research studies, both from the perspective of developing and
+evaluating the analytical framework for relative state estimation using
+bearing angles and in the lens of designing and achieving in-flight
+demonstrations. In general, the majority of previous literature
+operates under the well-documented claim that the angles-only
+navigation problem is not fully observable due to a lack of explicit
+range information. The work of Woffinden and Geller clarified
+this claim by providing closed-form sufficient conditions for
+observability using a linearized relative motion model in rectilinear
+coordinates. The conclusion was that, when formulating the anglesonly
+navigation dynamical system, using purely linear models for the
+dynamics and measurements yielded an unobservable system
+whereby the complete relative motion state could not be
+reconstructed from sequences of bearing angles. Gaias et al.
+explored the use of a relative orbital element (ROE)-based
+description for the relative motion, and they showed an improved
+physical interpretation wherein the unobservability problems were
+confined to a single state element that best approximated the
+ambiguous range. Furthermore, the inclusion of the J2 perturbation
+was shown to improve the mathematical metrics for observability,
+namely, through the decrease of the condition number of the so-called
+observability matrix. Still, the most common method employed by
+researchers to mitigate the unobservability, and the one taken by
+Woffinden and Geller and Gaias et al., is to conduct
+designated orbital maneuvers that produce a known variation to the
+natural bearing angle trends. This approach has the undesirable effect
+of strongly coupling the achievable relative navigation accuracy with
+the maneuver-planning task, and it must be repeated periodically to
+correct filter estimate divergence. Instead, recent work by Sullivan
+et al. formulated a novel procedure for angles-only navigation
+that does not require designated orbital maneuvering for successful
+relative motion estimation in near-circular low Earth orbit (LEO).
+The authors leveraged the same ROE state as discussed previously,
+and they instituted an estimation architecture that included nonlinear
+effects related to the mean-to-osculating transformation when
+mapping variations of the measured bearing angles to variations in
+the modeled J2-perturbed relative motion. However, several
+limitations existed within that research, including inconsistent filter
+performance for several common relative motion configurations,
+slow convergence rates for the estimation of the ROE state, and
+sensitivity to the selected filter tuning parameters.
+
+In the framework of the ARGON (advanced rendezvous
+demonstration using GPS and optical navigation) and AVANTI
+(autonomous vision approach-navigation and target identification)
+in-flight demonstrations, the research studies of D’Amico et al.
+and Gaias et al. provided compelling evidence showing that the
+unobservability decoupling and practical collision-avoidance
+constraints based on the E∕I-vector separation principle
+enabled successful reconstruction of the ROE state in near-circular
+orbits when applied in conjunction with orbital maneuvers. The
+ARGON mission was able to demonstrate angles-only rendezvous
+from tens of kilometers down to 2 km of separation in LEO using
+ground-in-the-loop image processing and relative orbit determination.
+Instead, the recently completed AVANTI mission achieved
+autonomous angles-only navigation and rendezvous from tens of
+kilometers to within 30 m of separation with a designated navigation
+filter using the ROE to estimate the J2- and differential-dragperturbed
+relative motion in LEO. These demonstrations provided
+useful insight into the constraints imposed by a real-world
+implementation of angles-only relative navigation.
+
+As a final consideration, the problem of angles-only initial relative
+orbit determination (IROD) is of great utility to both general space
+situational awareness and to the completion of an encompassing
+angles-only sequential filtering framework. An accurate and
+computationally efficient IROD tool can provide the necessary
+initialization to begin sequential angles-only filtering. In this context,
+Sullivan et al. developed an IROD tool that used a reduced set of
+ROE nondimensionalized by the relative mean longitude to estimate
+the shape and orientation of the relative motion in near-circular
+unperturbed orbits. That method neglected the dynamical evolution
+of the reduced ROE set and required substantial measurement time
+and prior knowledge on the relative separation to fully initialize the
+sequential estimation of the ROE state. Instead, Geller and Lovell
+explored the use of a second-order expansion of the
+measurement model, combined with the linear Hill–Clohessy–
+Wiltshire (HCW) dynamics model in spherical coordinates, to
+provide an approximate IROD solution for unperturbed, circular
+orbits. The work of Newman et al. investigated a two-part
+methodology that used a linear expansion of the measurement
+equations to solve for the initial state vector, which was then scaled
+using a nonlinear Volterra expansion of the dynamics in circular
+unperturbed orbits. Finally, the previously mentioned ARGON and
+AVANTI missions relied on prior orbital knowledge of the target
+provided by the North American Aerospace Defense Command’s
+(NORAD’s) two-line elements (TLEs) and designated radar
+campaigns, respectively, to fully initialize the estimation procedures
+without using bearing angle measurements at all.
+
+This paper primarily addresses the limitations of the previous
+maneuver-free approach of Sullivan et al. through the following
+main contributions to the state of the art. First, a novel deterministic
+method for angles-only IROD is developed for general application in
+J2-perturbed orbits of arbitrary eccentricity. The approach leverages
+the ROE state in order to decouple the strongly observable relative
+orbit geometry from the ambiguous range, resulting in a system of
+linear equations that are analytically solved to obtain the initial
+ROE unit vector. To appropriately scale the initial unit vector
+solution, two options are explored. First, a second-order expansion of
+the measurement equations yields a system of quadratic equations
+that must be solved for the scaling factors. Instead, the second option
+uses coarse prior range knowledge that is supplemented by the known
+unit vector obtained from sparse imaging to arrive at the complete
+initialization. This latter method is shown to reduce the amount of
+bearing angle measurements required for high performance,
+minimize the reliance on prior target orbit knowledge, and provide
+accurate initial ROE estimates to the sequential filter without using
+orbital maneuvers. Then, an innovative design procedure is
+conducted with the objective of developing a completely maneuverfree
+sequential state estimation architecture that yields accurate and
+robust performance with minimal increase in complexity for
+eccentric orbit scenarios. The filtering approach developed in this
+paper is founded on nonlinear variants of the seminal Kalman filter
+(KF) methodology originally presented by Rudolf Kalman
+in the context of estimation for linear systems. Notably, the extended
+KF (EKF) discussed by Bucy and the unscented KF (UKF)
+presented by Julier and Uhlmann are considered because they
+allow the powerful linear KF approach to be applied to systems with
+nonlinear dynamics and/or measurement models. In an effort to retain
+simplicity of the filtering frameworks, purely linear dynamics models
+that capture the secular J2 perturbation effects on the mean ROE are
+implemented instead of complex numerical integration methods for
+nonlinear dynamics propagation. To overcome the tight observability
+constraints imposed by maneuver-free angles-only navigation, the
+filter measurement model retains an appropriate nonlinear mean-toosculating
+orbital element transformation. In doing so, the
+separation-dependent osculating characteristics of the measured
+bearing angles are more effectively related back to variations in the
+estimated ROE state parameters. This keen insight into the perturbed
+dynamics, combined with a better capturing of the orbit curvature
+through the nonlinear mapping from orbital elements to position and
+velocity, is demonstrated to be the key to unlocking practical filter
+improvement. With these fundamental considerations handled, the
+scope of the design process transitions to improving filter accuracy
+and robustness. To that end, an inventive and simplistic framework is
+developed and implemented to estimate the camera sensor biases and
+empirical differential accelerations in addition to the ROE. These
+quantities directly supplement modeling deficiencies in the relative
+orbital dynamics with a limited increase in complexity. As an
+alternate design strategy, a novel adaptive angles-only filtering
+framework is presented whereby the process noise statistics are tuned
+online using sequences of measurement residuals to improve filter
+process modeling and proactively minimize sensitivity to filter noise
+statistics parameters that are instead often chosen through trial and
+error. The overall result is an estimation architecture that has been
+pragmatically improved to maximize the potential dynamical
+observability and filtering performance while still decoupling the
+navigation process from the maneuver-planning problem. Finally, the
+performance of the navigation algorithms is validated in high fidelity
+against rigorous numerically propagated force models, subject to
+realistic constraints on sensor performance. From a practical
+perspective, this accurate and robust maneuver-free angles-only
+methodology enables computational- and fuel-efficient estimation
+while still meeting the strict navigational requirements posed by
+multi-satellite mission concepts.
+
+After this introduction, Sec. II highlights the overall dynamical
+system formulation that provides the foundation for estimating the
+relative motion as encoded by a set of relative orbital elements. The
+problem of filter initialization through initial relative orbit
+determination is addressed in Sec. III, and the design and validation
+of the maneuver-free navigation architecture are conducted in
+Sec. IV. Finally, Sec. Voffers concluding remarks and lessons learned
+on the topic.
+
+The angles-only navigation problem studied in this paper involves
+estimating the relative state of a target space object with respect to an
+observing servicer spacecraft in eccentric orbits using only bearing
+angle measurements from a camera sensor on board the servicer
+spacecraft. Scenarios are considered that emulate far- to midrange
+operations, with separations ranging from tens of kilometers to a few
+hundred meters. Although it is assumed that the initial relative state is
+unknown, there may be coarse prior information available to initialize
+the navigation procedure. The estimation problem is fully posed by
+the received measurements and by the choice of state to be
+reconstructed.
+
+With the filter state chosen and the observables fixed, the
+foundation for the estimation problem is now formulated with an
+appropriate dynamical system representation. In the general anglesonly
+relative navigation problem, both the dynamics describing the
+relative motion and the measurement model relating state elements
+to observations are nonlinear. Accordingly, the EKF
+and UKF architectures are employed because they include
+modifications to the linear KF algorithm to account for nonlinear
+systems. Although the UKF enables the nonlinear dynamics and
+measurement models to be used directly in the estimation (via the
+unscented transform), the EKF variant requires a first-order
+truncation of the dynamics and measurement model Taylor series
+expansions. Accordingly, this section develops the general
+dynamical system representation for the estimation problem and
+the linearized form necessary for the EKF architecture. In the latter
+case, the time evolution of the complete estimation state is governed
+by the system of differential equations.
+
+The necessary system matrices for the relative motion state subset
+will now be developed in detail under the assumption of linear
+relative motion with respect to a servicer in an arbitrarily eccentric
+orbit. Relative motion perturbations due to J2 and atmospheric drag
+are readily captured for eccentric orbits in the STMs developed by
+Koenig et al. Under the same mathematical framework as
+Koenig et al., Guffanti et al. instead formulated a set of STMs
+that accounted for solar radiation pressure as well as sun and moon
+third-body gravity. From these works, it is possible to design a
+filtering framework that leverages improved closed-form dynamics
+modeling to capture the most relevant perturbations in any Earth orbit
+regime. For this paper, the relative motion STM is used to incorporate
+only the dominant J2 effects in eccentric orbit, which in general cause
+short-period (on the order of the orbital period) and long-period (on
+the order of the argument of perigee precession period) oscillations as
+well as secular drifts in the orbital elements. By substituting the firstorder
+averaged J2-perturbed potential into the LPE and effectively
+time averaging the ROE variational equations, the secular and longperiod
+effects are captured in a linear time-varying dynamics model.
+As previously stated, Koenig et al. formalized a modular
+procedure to build the STM for the time-varying system through a
+coordinate transformation to an intermediary time-invariant system.
+
+The structure of this STM provides insight into the evolution of
+the ROE due to J2, which is useful for reconciling potential
+observability issues that arise due to only using bearing angle
+measurements. First, both δλ and δiy display constant drift, with the
+former resulting from combined Keplerian orbital motion and J2
+and the latter from only J2. Additionally, the evolution of the relative
+eccentricity vector is marked by a secular drift perpendicular to the
+servicer eccentricity vector and a circular precession. An
+illustration of these trends is provided in Fig. 2. Although the
+established dynamics model only captures these secular and longperiod
+variations in the mean ROE, it will be later shown how to
+incorporate the short-period oscillations in the measurement model
+of the EKF and UKF.
+
+The measurement sensitivity matrix relating ROE variations to
+bearing angle variations, Cœ, is developed using the following
+series of partial derivatives. Again, note that this linearized
+representation is required for the EKF formulation, whereas the
+UKF allows for the complete nonlinear measurement model to be
+retained in the recursion.
+
+To compute the modeled bearing angles needed in Eq. (23), it is
+necessary to map the propagated ROE state to a relative position in
+the servicer RTN frame and apply Eq. (22) followed by Eq. (1).
+Multiple linear and nonlinear mappings were considered by Sullivan
+et al. in the context of an observability assessment and anglesonly
+navigation filter validation in near-circular orbits. The approach
+taken in this paper leverages the insight gained from that research to
+formulate the necessary mapping in an effort to maximize estimation
+accuracy and potential filter observability. Accordingly, a nonlinear
+mapping is chosen whereby the estimated mean ROE and the known
+mean absolute orbital elements of the servicer are used to calculate
+the mean absolute orbital elements of the target. These
+mean absolute orbital element sets can then be converted to
+corresponding osculating sets through the mean-to-osculating
+transformation offered by Schaub and Junkins and
+then used to compute the absolute position and velocity of the
+servicer and target. Finally, the relative position is calculated and
+mapped to the servicer RTN frame.
+
+Recall that the chosen dynamics model includes only the secular and
+long-period variations of the mean ROE due to J2 and neglects the
+short-period oscillations characterizing the true osculating perturbed
+relative motion. In general, conservative perturbations cause shortperiod
+oscillations of the ROE with amplitudes proportional to δλ (the
+mean separation). With regard to the J2 perturbation, this is because
+short-period effects are a function of the mean argument of latitude of
+the individual satellite orbits. Instead, nonconservative perturbations
+cause short-period oscillations of the ROE with the amplitude
+proportional to the differential ballistic coefficient (spacecraft size and
+orientation). The short-period trends for conservative perturbations are
+particularly obvious in Fig. 3, where a numerical simulation of a
+J2-perturbed relative motion trajectory has been conducted for
+illustration purposes. Note that, while qualitatively the same trends
+occur for eccentric reference orbits, the results of Fig. 3 are generated
+using a near-circular reference orbit (a = 7200 km and e = 0.01) for
+improved visualization.
+
+Over the simulation, the mean separation is decreased from 20 km
+to nearly 0 km to demonstrate the separation-dependent variation in
+the osculating ROE evolution. As evidenced in Fig. 3, the amplitudes
+of the ROE short-period oscillations demonstrate a corresponding
+decrease as the separation declines. Because the bearing angle
+measurements are inherently osculating, it stands to reason that these
+short-period characteristics necessarily encode information about the
+separation that can be leveraged in the filter measurement modeling.
+In addition to the immediate benefit of accounting for periodic
+separation-dependent features in the relative motion, the inclusion of
+the nonlinear mean-to-osculating transformation also preserves
+the improved orbit curvature modeling coming from the ROE. By definition,
+linearizing the transformation with respect to separation
+necessarily incurs a mismodeling of the orbit curvature. Accordingly,
+when combining a linear mean-to-osculating transformation with the
+nonlinear mapping from osculating orbital elements to position and
+velocity (which retains the improved curvature modeling), there is a
+mismatch between the observed and modeled bearing angles that
+precludes effective disambiguation of the separation. Instead, that
+mismatch is minimized by instituting the nonlinear mean-toosculating
+transformation to also retain the orbit curvature effects.
+The result is a filter measurement model that better relates observed
+variations in the bearing angles to variations in the full ROE state. As
+an interesting illustration, one might attempt to confront the
+observability problem of angles-only estimation using the Gim–
+Alfriend dynamics model, which captures the evolution of
+the mean OED subject to secular J2 perturbation effects in arbitrarily
+eccentric orbits, and subsequently applies a linear mapping to
+osculating OED followed by a linear mapping to the relative position
+and velocity elements. However, because the aforementioned
+mappings are linearized with respect to separation (as well as J2 in the
+mean-to-osculating transformation), the same range-reconciling
+benefits as the approach suggested in this paper are not obtained. As a
+final example, consider that the state-of-the-art YA dynamics model
+for propagating the relative translational state in eccentric orbits
+entirely neglects perturbations and the curvature of the orbit, thus
+precluding any functional observability improvements obtained by
+characterizing the perturbed dynamical environment of the anglesonly
+navigation scenario.
+
+A proper consideration of the complete filtering procedure must
+begin with an initialization of the estimated state and state covariance.
+The presented initial relative orbit determination method makes use
+of a batch of bearing angle measurements to estimate the initial ROE,
+with a minimum of three sets (six total data points) needed to
+reconstruct the six-dimensional state. The two-part algorithm is
+formulated to operate in arbitrarily eccentric J2-perturbed orbits.
+First, an approximate unit vector of the initial ROE state is computed.
+Then, a solution for the unknown factor that appropriately scales that
+unit vector is sought using a second-order expansion of the nonlinear
+measurement model.
+
+Recall that Gaias et al. presented results indicating that the
+observability problem was largely decoupled and that the range
+ambiguity was well-captured by a single state element δλ. This was
+further explored by Sullivan et al., where the IROD approach in
+that paper used a reduced set of ROEs that were scaled by δλ to
+approximately capture the shape and orientation of the relative
+motion but not the scale. Leveraging the intuition gained from these
+previous two works, this section is motivated by the fact that a unit
+vector should exist that accurately describes the shape and direction
+of the initial ROE, subject only to an unknown scaling factor.
+Consider the nonlinear measurement model in Eq. (1). With some
+algebraic manipulation, it is possible to rearrange this exact model in
+a linear form with respect to the camera frame relative position, and
+thus with respect to the RTN frame relative position.
+
+At this stage, the necessary dynamical system framework has been
+established and the method for filter initialization has been formulated
+and tested. The following sections highlight the design and validation
+of an estimation architecture that is better suited to handle the generally
+weak observability and corresponding numerical sensitivity associated
+with angles-only navigation. Unlike several previous approaches in
+angles-only navigation, the algorithms presented here are able to
+operate without the need for maneuvers dedicated to observability
+improvement. As a motivation, consider that such a filter architecture
+effectively decouples the navigation and maneuver-planning processes
+and enables more fuel-efficient rendezvous by removing the need for
+frequent observability maneuvers. This design procedure addresses the
+aforementioned shortcomings in the maneuver-free filter design
+originally presented by Sullivan et al. for near-circular orbits. The
+pragmatic improvements are achieved by systematically formulating a
+filter architecture that is able to make better use of relative motion
+variations induced by the perturbed dynamical environment while
+additionally estimating useful parameters that aid in improved
+convergence speed, consistency, and robustness for relevant orbital
+geometries.
+
+The EKF is considered as the baseline filter architecture to
+estimate the ROE state, both for its ubiquity in space navigation
+applications and to maintain consistency with previous works.
+As previously mentioned, the nonlinear dynamics and/or
+measurement models are accommodated in the EKF by performing
+a linear Taylor series expansion at each estimation step. Although
+the EKF allows for direct application of the nonlinear dynamics
+model in the estimate time-update (or prediction) step, the
+previously established STM solution is adopted for its ease of
+implementation and to avoid computationally expensive numerical
+integration within the filter. As an illustration of the latter
+advantage, the computational runtimes for multiple state-of-the-art
+STMs (including the one implemented in this work) were shown in
+to be several orders of magnitude smaller than numerical
+integration of high-fidelity nonlinear dynamics. The nonlinear
+measurement model in Eq. (1) is retained for the measurementupdate
+(or correction) step, and the associated linearization in
+Eq. (11) is only used to compute the Kalman gain and state
+covariance update. Instead, the strategic choice to implement the
+UKF is largely founded in its ability to retain the nonlinear
+measurement model through all phases of the filtering procedure at
+practically no extra cost in computational complexity. As
+previously discussed, accounting for nonlinear model characteristics
+(particularly those related to osculating effects) improves the
+filter’s ability to map separation-dependent variations in the
+measured bearing angles to ROE variations that capture range
+information. The UKF forgoes linearizing the measurement model
+Taylor series by implementing a stochastic weighted regression
+procedure. As an improvement to address sensor errors and
+dynamics modeling deficiencies in the EKF, an augmented-state
+EKF (AS-EKF) that estimates the sensor biases and empirical
+differential accelerations is also presented and compared against the
+baseline architecture. Finally, adaptive forms of the EKF and UKF
+are formulated to estimate the process noise statistics online in an
+effort to improve filter stability and performance over a variety of
+orbit scenarios.
+
+The filter designs are assessed for three nominal relative orbit (RO)
+scenarios that emulate phases of a rendezvous operation. Servicer
+absolute orbit initial conditions are given by Eq. (39) and the initial
+mean ROE test cases describing each of the relative orbit trajectories
+are provided in Table 3. RO1 is representative of a far-range hold
+point at initial mean along-track separation of 30 km. RO2 introduces
+a small difference in the semimajor axis, which enables the servicer to
+approach the target on a naturally drifting relative trajectory. RO3
+describes a leader–follower configuration with a purely along-track
+separation of 5 km.
+
+For each test case, the position and velocity of the servicer and target
+are numerically propagated using rigorous full-force models,
+including the GRACE Gravity Model 01S (GGM01S) of order and
+degree 120, a Harris–Priester atmospheric drag model, third-body sun
+and moon gravity, and solar radiation pressure with a cylindrical Earth
+shadow model. For an in-depth discussion of this simulation tool, the
+work by Eddy et al. is recommended. This simulated truth
+trajectory is then used to generate simulated bearing angles and Global
+Positioning System (GPS) position/velocity/time solutions that are
+augmented with additive noise. Recall that Table 1 shows the noise
+statistics for the bearing angle measurements and biases, as well as the
+servicer’s orbit and attitude knowledge. The bearing angle and attitude
+noise parameters are consistent with the Blue Canyon Technologies
+star tracker and attitude determination system, and the absolute
+orbit noise parameters are consistent with GPS weak signal tracking in
+eccentric orbit. Finally, the numerically propagated position and
+velocity of the servicer and target are transformed to corresponding
+osculating orbital element sets and then numerically averaged to produce the mean
+elements subject to the above perturbations. Finally, the reference truth
+ROE are assembled from the numerically computed mean elements
+according to Eq. (2). All estimation errors are calculated by
+differencing the output mean ROE of the estimation algorithm from the
+numerical truth ROE set. To evaluate filter convergence and
+performance, the estimation error statistics (mean and standard
+deviation) for each filter test are computed over the last three simulated
+orbits and tabulated in Tables 4 and 5.
+
+The selection of Kalman filter process and measurement noise
+statistics is of interest because it is known that these features can largely
+influence the filter stability and performance, particularly for nonlinear
+variants like the EKF and UKF. Process noise is generally included to
+account for dynamics that are unmodeled by the filter, as well as to aid
+in stability by keeping the filter receptive to new measurements. As
+such, a proper selection of process noise statistics could arguably
+preclude augmenting the estimation state with differential empirical
+accelerations. The measurement noise statistics are implemented to
+account for sensor mismodeling in the filter, and they can often be
+accurately determined by hardware testing. The intent of this section is
+to develop a mathematical framework for a class of adaptive nonlinear
+filters that are able to tune the process and/or measurement noise
+statistics online. This design consideration is founded on the strategy
+that more accurately accounting for the dynamical processes through
+an adaptive method can help overcome observability issues related to
+mismodeling and linearization, and thus mitigate numerical sensitivity
+and inconsistent filter performances.
+Adaptive filtering frameworks have been established in several
+previous research studies. Most notably, Mehra developed
+the mathematical foundation for four main categories of adaptive
+filtering methodologies: namely, the Bayesian, maximum likelihood,
+correlation matching, and covariance matching techniques. Meyers
+and Tapley further expanded upon the covariance matching
+technique, and they discussed numerical results in the context of
+ground-based tracking of LEO satellites. Other research applications
+for adaptive estimation have been explored in terrestrial target
+tracking by Maybeck et al., in spacecraft attitude determination
+by Mehra et al., and in spacecraft relative navigation using
+carrier-phase differential GPS by Busse et al.. In the following,
+an adaptive approach is designed for angles-only relative navigation
+using the innovation covariance matching technique.
+In Kalman filtering, the term innovation is generally used to
+describe the residual formed by the difference between a
+measurement received by the filter and the expected measurement
+conditioned on the current state estimate. Alternatively, the term prefit
+residual is commonly used in spacecraft orbit determination.
+
+This research has addressed the problem of developing filter
+algorithms that do not require maneuvering to estimate the
+relative orbital motion of a target space object with respect to an
+observing spacecraft using only bearing angles received by the
+servicer onboard camera. As part of the estimation architecture
+development, the problem of angles-only initial relative orbit
+determination was addressed to provide an initialization to the
+sequential navigation filter. Unlike other approaches that constrain
+the initial relative orbit determination problem to circular
+unperturbed orbits, the method in this paper was formulated for
+implementation in eccentric J2-perturbed orbits. Although the
+approach was shown to accurately capture the unit vector
+associated with the initial relative orbital element state, the solution
+for the necessary scaling factor to complete the unique initialization
+suffered from the simplifying assumptions used to attempt a linear
+least-squares solution. Still, the definitive advantages of the new
+solution procedure were evidenced by the consistent initialization
+accuracy for a multitude of relative motion geometries while
+requiring less total measurement time and only relying on coarse
+range knowledge with kilometer-level error.
+With regard to the sequential estimation architectures developed in
+this work, several key lessons were learned. First, in assessing the
+ability of the extended Kalman filter to estimate the relative orbital
+element state, inconsistent performances for several relative motion
+scenarios provided a strong indication that the dynamics and
+measurement model linearizations required by the extended KF
+(EKF) substantially limited the achievable observability and,
+accordingly, the filter consistency and accuracy. From there,
+augmenting the estimation state to include empirical accelerations
+and sensor biases that supplement the truncated process and
+measurement models in the EKF yielded incremental improvements
+in the filter performance for relative motion cases that plagued the
+original design implementation. Although the augmented-state EKF
+still demonstrated distinct inconsistency and slow convergence in
+estimating the relative orbital element (ROE) and sensor biases for
+the majority of simulated orbital geometries, the improved filter
+convergence speed for relative orbit geometries with a difference in
+semimajor axes suggested that an alternative method to supplement
+the filter process model could improve the overall estimation
+capability. Accordingly, an adaptive variant of the EKF that tuned the
+process noise statistics online was developed and validated. The
+adaptive EKF did not show substantial improvement over the
+augmented-state EKF. Instead, by leveraging the ability to forgo
+measurement model linearization while retaining the simplicity of
+linear dynamics in the unscented Kalman filter framework, the filter
+performance showed distinct stability and performance advantages in
+cases where there was not a large variation of the relative motion due
+to a nonzero difference in the semimajor axis. This was largely due to
+the unscented KF (UKF) ability to accurately correlate nonlinear
+separation-dependent osculating and orbit curvature effects observed
+in the bearing angle measurements to improved separation-rectified
+variations in the relative motion. This deeper systematic inclusion of
+perturbed relative motion effects in the measurement model was
+entirely enabled by the use of mean relative orbital elements as the
+filter state parameterization. With the filter stability issues resolved,
+the design process moved toward improving convergence speed and
+accuracy. Thus, the strategic choice was made to supplement the
+linearized dynamics model with adaptive process noise tuning. This
+adaptive UKF outperformed every other variant across the board
+(including in the particularly difficult pure along-track separation
+case), estimating the ROE state and sensor biases to higher accuracy
+with faster convergence than previous designs and with formal
+covariances that accurately reflected the true error trends. The results
+conclusively demonstrated that a systematic method for capturing the
+nonlinear effects of orbit curvature and dominant perturbations in a
+filter measurement model, combined with supplementation of an
+efficient linear dynamics model by adaptive process noise tuning,
+enabled improved maneuver-free angles-only navigation in eccentric
+orbits.

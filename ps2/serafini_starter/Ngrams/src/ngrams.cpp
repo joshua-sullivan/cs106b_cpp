@@ -30,22 +30,24 @@
 using namespace std;
 
 void printWelcomeMessage();
-void promptUserForInitialInputs(ifstream& stream, int& N);
-void deployRandomWriter(ifstream& stream, const int N);
-HashMap<Queue<string>, Vector<string> > buildGramMap(ifstream stream, const int N);
+HashMap<Queue<string>, Vector<string> > promptUserForInitialInputs(ifstream& stream, int& N);
+void buildNGramMap(ifstream& stream, const int N, HashMap<Queue<string>, Vector<string> >& NGramMap);
 void parseWindowAndAdd(HashMap<Queue<string>, Vector<string> >& NGramMap, Queue<string>& window, Vector<string>& vectVal, const string word);
-Queue<string> createTextSequence(HashMap<Queue<string>, Vector<string> >& NGramMap, const int numRandWords);
+void deployRandomWriter(const HashMap<Queue<string>, Vector<string> >& NGramMap, const int N);
+Queue<string> createTextSequence(const HashMap<Queue<string>, Vector<string> >& NGramMap, const int numRandWords);
 void printTextSequence(Queue<string>& outputTextQ);
 
 int main() {
-
+// Main function interface
     printWelcomeMessage();
 
     ifstream stream;
     int N;
-    promptUserForInitialInputs(stream, N);
+    HashMap<Queue<string>, Vector<string> > NGramMap = promptUserForInitialInputs(stream, N);
 
-    deployRandomWriter(stream, N);
+    stream.close();
+
+    deployRandomWriter(NGramMap, N);
 
     cout << "Exiting." << endl;
     return 0;
@@ -61,7 +63,8 @@ void printWelcomeMessage(){
     cout << endl;
 }
 
-void promptUserForInitialInputs(ifstream& stream, int& N){
+HashMap<Queue<string>, Vector<string> > promptUserForInitialInputs(ifstream& stream, int& N){
+// Prompts the user for the input file name, N value, and then proceeds to build an N-gram map.
 
     promptUserForFile(stream, "Input file name? ");
 
@@ -79,10 +82,84 @@ void promptUserForInitialInputs(ifstream& stream, int& N){
         }
     }
     cout << endl;
+
+    HashMap<Queue<string>, Vector<string> > NGramMap;
+
+    // Building N-Gram map from moving window of size N-1
+    buildNGramMap(stream, N, NGramMap);
+
+    return NGramMap;
 }
 
-void deployRandomWriter(ifstream& stream, const int N){
+void buildNGramMap(ifstream& stream, const int N, HashMap<Queue<string>, Vector<string> >& NGramMap){
+// Builds N-Gram map, with keys given by a queue of strings which has size N-1, and values given by
+// a vector of strings is composed of all Nth words following the moving window.
 
+    const int dimWindow = N - 1;
+    // Initializing
+    string word;
+    Queue<string> window;
+    Queue<string> firstWords;
+
+    // Creating a loop counter to enqueue the first N-1 words of the text for use in wrapping.
+    int counter = 0;
+
+    // Populating the initial window and also creating a first words queue to be used when wrapping.
+    while (window.size() < dimWindow){
+        stream >> word;
+        window.enqueue(word);
+
+        if (counter < dimWindow){
+            firstWords.enqueue(word);
+        }
+    }
+
+    Vector<string> vectVal;
+
+    // Loop through all words in the file stream
+    while(stream >> word){
+        // Add the word to an existing key-value pair, or create a new key-value pair
+        parseWindowAndAdd(NGramMap, window, vectVal, word);
+    }
+
+    // Carrying out additional iterations to finalize the wrapping.
+    string firstWord;
+    for (int ii = 0; ii < N - 1; ii++){
+        // Uses the same methodology for populating the non-wrapped portion of the map,
+        // just with a set of words dequeued from the firstWords queue.
+        firstWord = firstWords.dequeue();
+        parseWindowAndAdd(NGramMap, window, vectVal, firstWord);
+    }
+
+}
+
+void parseWindowAndAdd(HashMap<Queue<string>, Vector<string> >& NGramMap, Queue<string>& window, Vector<string>& vectVal, const string word){
+// Function which updates the key-value pairs in the N-Gram map.  It checks whether the current map contains the key (the window of text).
+// If no key exists, a new one is created and the value stored.  If a key exists, the current value vector is pulled and the word is added.
+
+
+    // Updating key-value pair that already exists
+    if (NGramMap.containsKey(window)){
+        vectVal = NGramMap.get(window);
+        vectVal.add(word);
+        NGramMap.put(window, vectVal);
+        vectVal.clear();
+    }
+    // Create new key-value pair
+    else{
+        vectVal.add(word);
+        NGramMap.put(window, vectVal);
+        vectVal.clear();
+    }
+
+    // Update the window (slide it forward by one).
+    window.dequeue();
+    window.enqueue(word);
+
+}
+
+void deployRandomWriter(const HashMap<Queue<string>, Vector<string> >& NGramMap, const int N){
+// Recursive function which prompts the user for the number of words to generate, and then generates the "random" text.
     int numRandWords;
 
     bool promptForNumRandWords = true;
@@ -92,7 +169,6 @@ void deployRandomWriter(ifstream& stream, const int N){
 
         // Checking if user commands to terminate the program
         if (numRandWords == 0){
-            stream.close();
             return;
         }
 
@@ -106,84 +182,47 @@ void deployRandomWriter(ifstream& stream, const int N){
         }
     }
 
-    HashMap<Queue<string>, Vector<string> > NGramMap = buildGramMap(stream, N);
-
+    // Calling the text sequence creator algorithm.
     Queue<string> outputTextQ = createTextSequence(NGramMap, numRandWords);
+
+    // Printing the output sequence.
     printTextSequence(outputTextQ);
 
-    deployRandomWriter(stream, N);
+    // Recursively calling until the user terminates the program.
+    deployRandomWriter(NGramMap, N);
 }
 
-HashMap<Queue<string>, Vector<string> > buildGramMap(ifstream stream, const int N){
+Queue<string> createTextSequence(const HashMap<Queue<string>, Vector<string> >& NGramMap, const int numRandWords){
+// Given a N-Gram map, this function initializes the random text sample from a random window, and then draws successive
+// words for the output text by sampling the N-Gram map pairs.  This continues until the user-specified size of output text
+// is achieved.
 
-    HashMap<Queue<string>, Vector<string> > NGramMap;
-
-    const int dimWindow = N - 1;
-
-    string word;
-    Queue<string> window;
-
-    int counter = 0;
-    Queue<string> firstWords;
-    while (window.size() < dimWindow){
-        stream >> word;
-        window.enqueue(word);
-
-        if (counter < dimWindow){
-            firstWords.enqueue(word);
-        }
-    }
-
-    Vector<string> vectVal;
-
-    while(stream >> word){
-        parseWindowAndAdd(NGramMap, window, vectVal, word);
-    }
-
-    string firstWord;
-    for (int ii = 0; ii < N - 1; ii++){
-        firstWord = firstWords.dequeue();
-        parseWindowAndAdd(NGramMap, window, vectVal, firstWord);
-    }
-
-    return NGramMap;
-}
-
-void parseWindowAndAdd(HashMap<Queue<string>, Vector<string> >& NGramMap, Queue<string>& window, Vector<string>& vectVal, const string word){
-
-    if (NGramMap.containsKey(window)){
-        vectVal = NGramMap.get(window);
-        vectVal.add(word);
-        NGramMap.put(window, vectVal);
-        vectVal.clear();
-    }
-
-    else{
-        vectVal.add(word);
-        NGramMap.put(window, vectVal);
-        vectVal.clear();
-    }
-
-    window.dequeue();
-    window.enqueue(word);
-
-}
-
-Queue<string> createTextSequence(HashMap<Queue<string>, Vector<string> >& NGramMap, const int numRandWords){
-
+    // Creating a vector of the map keys (which are themselves queues of strings).
     Vector<Queue<string> > mapKeys = NGramMap.keys();
+
+    // Generating a random starting point in the vector of keys.
     int randStartIdx = randomInteger(0, mapKeys.size() - 1);
+
+    // Creating a queue which captures the complete output text from the random writer.
     Queue<string> outputTextQ = mapKeys[randStartIdx];
+
+    // Initializing the moving window to the starting point in the map key queue.
     Queue<string> window = outputTextQ;
     Vector<string> vectVal;
     int randIdx;
     string addWord;
 
+    // Loop until the desired output size is achieved
     while (outputTextQ.size() < numRandWords){
+        // Get the values for a given key in the N-Gram map.
         vectVal = NGramMap.get(window);
+
+        // Randomly index into that vector of strings and enqueue that word onto the output text queue.
         randIdx = randomInteger(0, vectVal.size() - 1);
         addWord = vectVal[randIdx];
         outputTextQ.enqueue(addWord);
+
+        // Update the window queue.
         window.dequeue();
         window.enqueue(addWord);
         vectVal.clear();
@@ -193,7 +232,7 @@ Queue<string> createTextSequence(HashMap<Queue<string>, Vector<string> >& NGramM
 }
 
 void printTextSequence(Queue<string>& outputTextQ){
-
+// Function for printing the final output queue from the random writer algorithm.
     cout << "... ";
     while (!outputTextQ.isEmpty()){
         cout << outputTextQ.dequeue() << " ";
