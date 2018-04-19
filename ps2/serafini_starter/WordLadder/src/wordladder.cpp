@@ -22,9 +22,9 @@
 #include <string>
 #include "console.h"
 #include "filelib.h"
+#include "hashset.h"
 #include "lexicon.h"
 #include "queue.h"
-#include "set.h"
 #include "simpio.h"
 #include "stack.h"
 #include "strlib.h"
@@ -143,7 +143,7 @@ bool runWordLadderAlgo(Lexicon& lex, const string& word1, const string& word2, S
 // Function which runs the word ladder algorithm using two user-provided words and a lexicon.
 
     // Creating a queue of stacks
-    Queue<Stack<string>> stackQ;
+    Queue<Stack<string> > stackQ;
 
     // Initializing a stack that contains word1
     Stack<string> stack1;
@@ -152,9 +152,11 @@ bool runWordLadderAlgo(Lexicon& lex, const string& word1, const string& word2, S
     // Initialiizing the queue with this initial stack
     stackQ.enqueue(stack1);
 
-    // Creating a set of used words to ensure words are not repeated in a ladder
-    Set<string> usedWords;
+    // Creating a hashset of used words to ensure words are not repeated in a ladder
+    HashSet<string> usedWords;
     usedWords.add(word1);
+
+    Stack<string> tempStack_copy;
 
     // While the queue is not empty...
     while (!stackQ.isEmpty()){
@@ -180,7 +182,7 @@ bool runWordLadderAlgo(Lexicon& lex, const string& word1, const string& word2, S
                 }
                 // if we didn't find our second word, add the new neighbor and continue on.
                 else {
-                    Stack<string> tempStack_copy = tempStack;
+                    tempStack_copy = tempStack;
                     tempStack_copy.push(tempNeighbor);
                     stackQ.enqueue(tempStack_copy);
                 }
