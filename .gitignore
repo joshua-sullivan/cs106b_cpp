@@ -1,8 +1,11 @@
+# qt pro files
+*.pro
+
 # lib
-*/lib
+**/lib
 
 # output
-*/output
+**/output
 
 # res
-*/res
+**/res
