@@ -83,13 +83,10 @@ string VectorPatientQueue::processPatient() {
     // Updating clock
     clock++;
 
-    if (isEmpty()){
-        throw string(EMPTY_QUEUE);
-    }
+    string mostUrgentPatientName = frontName();
 
     // Calling helper function to find most urgent patient index
     int mostUrgentIdx = findMostUrgentPatient();
-    string mostUrgentPatientName = pq[mostUrgentIdx].name;
 
     // Removing the patient from the queue
     pq.remove(mostUrgentIdx);
