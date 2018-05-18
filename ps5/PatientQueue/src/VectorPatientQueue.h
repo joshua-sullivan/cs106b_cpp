@@ -1,4 +1,4 @@
-// This is the H file you will edit and turn in. (TODO: Remove this comment!)
+// Header file for the vector implementation of a priority queue.
 
 #pragma once
 
