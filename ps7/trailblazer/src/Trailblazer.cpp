@@ -7,6 +7,8 @@
  *     between the current path endpoint and the desired final endpoint.
 */
 
+#include <cfloat>
+
 #include "pqueue.h"
 #include "queue.h"
 #include "hashset.h"
@@ -23,11 +25,14 @@ void enqueueNeighbors(PriorityQueue<Path>& pathQ, double& currCost, RoadNode* en
                       RoadNode* node, const HashSet<string>& visitedNodes, const RoadGraph& graph);
 double computeCost(const Path& currPath, const RoadGraph& graph);
 double computeHeuristic(RoadNode* start, RoadNode* end, const RoadGraph& graph);
+bool aStarHelper(const RoadGraph& graph, RoadNode* start, RoadNode* end, Path& solnPath);
+HashSet<RoadNode*> createNodeHashSet(Path& path);
+double computePathCost(Path& path, const RoadGraph& graph);
+
 
 /*
  * Helper function for visiting a RoadNode in the trailblazing algorithms.
 */
-
 void visitNode(RoadNode* node, HashSet<string>& visitedNodes){
 
     visitedNodes.add(node->nodeName());
@@ -56,8 +61,8 @@ void enqueueNeighbors(Queue<Path>& pathQ, const Path& currPath, RoadNode* node,
     }
 }
 
-void enqueueNeighbors(PriorityQueue<Path>& pathQ, double& currCost, RoadNode* end, const bool useAstar,
-                      const Path& currPath, RoadNode* node, const HashSet<string>& visitedNodes, const RoadGraph& graph){
+void enqueueNeighbors(PriorityQueue<Path>& pathQ, double& currCost, RoadNode* end, const bool useAstar,const Path& currPath,
+                      RoadNode* node, RoadEdge* neglectEdge, const HashSet<string>& visitedNodes, const RoadGraph& graph){
 
     Path newPath;
     double updatedCost;
@@ -66,6 +71,11 @@ void enqueueNeighbors(PriorityQueue<Path>& pathQ, double& currCost, RoadNode* en
     double priorHeuristicCost = useAstar * computeHeuristic(node, end, graph);
 
     for (RoadNode* neighbor : graph.neighborsOf(node)){
+
+        if (neglectEdge != nullptr and node->nodeName() == neglectEdge->from()->nodeName() and
+            neighbor->nodeName() == neglectEdge->to()->nodeName()){
+            continue;
+        }
 
         if (!visitedNodes.contains(neighbor->nodeName())){
 
@@ -168,7 +178,7 @@ Path dijkstrasAlgorithm(const RoadGraph& graph, RoadNode* start, RoadNode* end) 
             }
 
             bool useAstar = false;
-            enqueueNeighbors(pathQ, currCost, end, useAstar, currPath, currLast, visitedNodes, graph);
+            enqueueNeighbors(pathQ, currCost, end, useAstar, currPath, currLast, {}, visitedNodes, graph);
         }
     }
 
@@ -181,7 +191,7 @@ Path dijkstrasAlgorithm(const RoadGraph& graph, RoadNode* start, RoadNode* end) 
  * two nodes divided by the maximum allowable speed on the graph.  Note that there is the
  * option for ignoring a specified edge in this implementation.
 */
-Path aStarHelper(const RoadGraph& graph, RoadNode* start, RoadNode* end) {
+bool aStarHelper(const RoadGraph& graph, RoadNode* start, RoadNode* end, Path& solnPath, RoadEdge* neglectEdge) {
 
     Path pathVec;
     pathVec.add(start);
@@ -204,25 +214,96 @@ Path aStarHelper(const RoadGraph& graph, RoadNode* start, RoadNode* end) {
             visitNode(currLast, visitedNodes);
 
             if (currLast->nodeName() == end->nodeName()) {
-                return currPath;
+                solnPath = currPath;
+                return true;
             }
 
             bool useAstar = true;
-            enqueueNeighbors(pathQ, currCost, end, useAstar, currPath, currLast, visitedNodes, graph);
+            enqueueNeighbors(pathQ, currCost, end, useAstar, currPath, currLast, neglectEdge, visitedNodes, graph);
         }
     }
 
-    return {};
+    return false;
 }
 
+/*
+ * Nominal A* function, which calls the A* helper function with no neglected edges
+*/
 Path aStar(const RoadGraph&graph, RoadNode* start, RoadNode* end) {
+
+    Path solnPath;
+    bool solnFound = aStarHelper(graph, start, end, solnPath, {});
+
+    if (solnFound){
+        return solnPath;
+    }
+    else{
+        return {};
+    }
 }
+
+/*
+ * Helper function for creating a Hashset of nodes contained in a path
+*/
+HashSet<RoadNode*> createNodeHashSet(Path& path){
+
+    HashSet<RoadNode*> nodeSet;
+    for (int ii = 0; ii < path.size() - 1; ii++){
+        nodeSet.add(path[ii]);
+    }
+    return nodeSet;
+}
+
+/*
+ * Helper function for computing the cost of a path
+*/
+double computePathCost(Path& path, const RoadGraph& graph){
+
+    double cost = 0.0;
+    for (int ii = 0; ii < path.size() - 2; ii++){
+        cost += graph.edgeBetween(path[ii], path[ii + 1])->cost();
+    }
+    return cost;
+}
+
+/*
+ * Function for computing an alterantive route that differs from the best route by a
+ * fixed threshold.  The alternative route is the minimum cost of all candidates.
+*/
 
 Path alternativeRoute(const RoadGraph& graph, RoadNode* start, RoadNode* end) {
-    /* TODO: Delete the following lines and implement this function! */
-    (void) graph;
-    (void) start;
-    (void) end;
-    return {};
+
+    Path bestPath = aStar(graph, start, end);
+
+    HashSet<RoadNode*> bestNodeSet = createNodeHashSet(bestPath);
+
+    RoadEdge* currNeglectEdge;
+
+    Path altSolnPath;
+    HashSet<RoadNode*> altNodeSet;
+
+    double currAltSolnPathCost = DBL_MAX;
+
+    Path bestAltSolnPath = {};
+
+    for (int ii = 0; ii < bestPath.size() - 2; ii++){
+        currNeglectEdge = graph.edgeBetween(bestPath[ii], bestPath[ii + 1]);
+        bool foundAltSoln = aStarHelper(graph, start, end, altSolnPath, currNeglectEdge);
+        if (foundAltSoln){
+            altNodeSet = createNodeHashSet(altSolnPath);
+            double diffScore = (double)(bestNodeSet - altNodeSet).size() / bestNodeSet.size();
+
+            if (diffScore > SUFFICIENT_DIFFERENCE){
+                double altPathSolnCost = computePathCost(altSolnPath, graph);
+                if (altPathSolnCost < currAltSolnPathCost){
+                    currAltSolnPathCost = altPathSolnCost;
+                    bestAltSolnPath = altSolnPath;
+                }
+            }
+        }
+        altSolnPath.clear();
+    }
+
+    return bestAltSolnPath;
 }
 
